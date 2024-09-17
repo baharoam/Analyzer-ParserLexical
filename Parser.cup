@@ -1,0 +1,405 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.lang.Thread;  
+import java.io.*;  
+import java.io.IOException;
+  
+  
+
+
+// Connects parser to scanner
+parser code {:
+    Lexer s;
+    Parser(Lexer s) { this.s = s;}
+:};
+
+
+//???????????????
+action code {:
+    Map<String, Tuple<Integer, Object>> sourceTypes = new HashMap();
+    
+
+    Map<String, ArrayList<Integer>> sourceSignatures = new HashMap();
+
+    public String regularName(Integer type){
+        if(type == Constants.TypeInt) return "Integer";
+        if(type == Constants.TypeString) return "String";
+        return "";
+    }
+
+    public String argTypeWriter(ArrayList<Integer> list){
+        String type = "";
+        for(int i = 0; i < list.size() - 1; i++){
+            type += regularName(list.get(i)) + ", ";
+        }
+        type += regularName(list.get(list.size() - 1));
+
+        return type;
+    }
+
+    public  void argCheck(ArrayList<Integer> arg1, ArrayList<Integer> arg2, String funcName){
+        if(arg1 == null || arg2 == null) {
+            System.out.println("Function \'" + funcName + "\' doesn't exist in the current context." );
+            return;
+        }
+        if(arg1.size() != arg2.size())
+            System.out.println("Method signature mismatch! \'" + funcName + "\' defined with " + arg1.size() + " arguments. You've provided " + arg2.size() + " arguments.");
+        else{
+            boolean isCorrect = true;
+            Integer provided = 0;
+            Integer expected = 0;
+            for(int i = 0; i < arg1.size(); i++){
+                if(!arg1.get(i).equals(arg2.get(i))) {
+                    expected = arg1.get(i); provided = arg2.get(i);
+                    isCorrect =false; break;
+                }
+            }
+
+            if(isCorrect)
+                System.out.println("Method call with name \'" + funcName + "\' was ok!");
+            else
+                System.out.println("Method call mismatch! Expected arg type: \'" + regularName(expected) + "\', provided: \'" + regularName(provided));
+        }
+    }
+
+
+        public void ClearScreen(Double SleepTime) throws IOException, InterruptedException
+                {  
+  
+                try {  
+                    for (int j = 0; j < SleepTime+1 ; j++)  
+                    {  
+  
+ 
+                    Thread.sleep(1000);  
+  
+// displaying the value of the variable  
+                    System.out.println(j);  
+                    } 
+
+
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+                    System.out.println();
+
+                    }  
+                catch (Exception expn)   
+                {  
+                    System.out.println(expn);  
+                }  
+                }  
+
+
+:}
+
+
+
+/* define how to connect to the scanner */
+init with {: /* s.init(); */ :};
+scan with {: return s.next_token(); :};
+
+
+/* Terminals */
+terminal            TypeDef, MemDef, FOR, IN, RETURN ,IF ,ELSE, ELSIF,  
+                    TRUE, FALSE, EntryPoint, SWITCH, CASE, WHILE,
+                    CONTINUE, BRAK, DOT, DO, CLEAR, PRINTLN, BREAK; 
+
+terminal            SEMICOLON, OPAR, CPAR, OBLOCK, CBLOCK, OBRACE, CBRACKET,
+                    CBRACE, OBRACKET, 
+                    COLON, COMMA, DEC, POWER, ASSIGN, COMPARATOR , NEQ, EQ,
+                     
+                    PLUSPLUS, PLUS, MINUS, MINUSMINUS, MULT, OR, DIVIDE, NOT,
+                    NNOT, AND, MODULO, ANGBR, LTEQ, GTEQ, ASIGNN, Begin, END, LT;
+
+
+// PRINTLN
+terminal String     Identifier;
+terminal String     StringConst;
+terminal Class      Var;
+terminal Integer    Type;
+terminal Number    NumValue; 
+terminal Number    Time;       // our scanner provides numbers as integers
+
+/* None Terminals */ 
+non terminal                  empty;
+non terminal                  MethodDeclare;
+non terminal                  MethodCall;
+non terminal                  Assignment;
+non terminal Object           Expression;
+non terminal                  Loop;
+non terminal                  Statements;
+non terminal                  Statement;
+non terminal                  ForAssignment;
+non terminal                  Declaration;
+non terminal                  IfStatement;
+non terminal                  ElseStatement;
+non terminal                  ElseIfStatement;
+non terminal                  ElseIfStatements;
+non terminal                  DoStatement;
+non terminal                  WhileStatement;
+non terminal                  ForStatement;
+non terminal                  SwitchBlock;
+non terminal                  SwitchCases; 
+non terminal                  SwitchCase;
+non terminal Boolean          Condition;
+non terminal                  BaseName;
+non terminal                  ConditionalStatement;
+non terminal                  PowerStatement;
+non terminal                  CalculationStatement;
+non terminal                  PrintlnInput;
+non terminal                  Calculation;
+non terminal                  ClearStatement;
+non terminal                  PrintlnStatement;
+non terminal                  UpdateaAssignment;
+non terminal TypeValuePair    AssignmentVal;
+non terminal                  EntryBlock;
+non terminal                  Code;
+non terminal                  SwitchStatement;
+non terminal  ArrayList<Integer> MethodSignature;
+non terminal  ArrayList<Integer> Signature;
+non terminal                  OneElseStatement;
+non terminal  ArrayList<Integer> MethodArgs;
+non terminal  ArrayList<Integer> Args;
+non terminal  TypeValuePair Arg;
+/* Calc Non-terminals */
+non terminal Term, Factor, Logic, Comparison, CalculationList;
+non terminal Double expr;
+precedence left PLUS, MINUS;
+precedence left MULT, DIVIDE;
+precedence right POWER;
+
+/* The grammar rules */
+Code           ::= MethodDeclare Code 
+                |  EntryBlock Code {: System.out.println("Entry Block"); :}
+                | empty
+                ;
+
+EntryBlock     ::= EntryPoint OBLOCK Statements CBLOCK 
+                {: System.out.println(">> Code entry point"); :}
+                ;
+
+Statements     ::= Statement SEMICOLON Statements {: :} 
+                | ConditionalStatement
+                | Loop
+                | empty
+                ;
+
+Statement      ::= Assignment 
+                | MethodCall
+                | CalculationStatement {:System.out.println("This is Calc Statement"); :}
+                | ClearStatement
+                | PrintlnStatement
+                | Declaration
+                ;
+
+
+Declaration    ::=  Type:t Identifier:i ASSIGN AssignmentVal:v {:
+                    if (sourceTypes.containsKey(i)){
+                        System.out.println(i + " was already declared");
+                    }
+                    else 
+                    { 
+
+                        sourceTypes.put(i, new Tuple(v.Type, v.Value));
+                        System.out.println(">> New variable declared with name \'" + i + "\' with value \'" + v.Value + "\'!");
+                    }  
+                    :} 
+                    | Type:t Identifier:i {:
+                    if (sourceTypes.containsKey(i)){
+                        System.out.println(i + " was already declared");
+                    }
+                    else {
+              
+                    sourceTypes.put(i, new Tuple(t, null));
+                    System.out.println("New Declaration without assignment");
+                    }
+                    :}
+                    ;
+
+
+UpdateaAssignment        ::= Identifier:i PLUSPLUS {: System.out.println("Variable \'" + i + "\' incremented."); :} 
+                |PLUSPLUS:i Identifier {: System.out.println("Variable \'" + i + "\' incremented."); :}
+                |Identifier:i MINUSMINUS {: System.out.println("Variable \'" + i + "\' decremented."); :}
+                |MINUSMINUS Identifier:i {: System.out.println("Variable \'" + i + "\' decremented."); :}
+                ;
+
+
+Assignment     ::=  Identifier:i ASSIGN AssignmentVal:b {:
+                    System.out.println("Assigning Value \'" + b.Value +"\' to \'" + i + "\'!");
+                    if(!sourceTypes.get(i).getElement0().equals(b.Type)){
+                        System.out.println("error: Type '" + regularName(b.Type) +  "' doesn't match type '" + regularName(sourceTypes.get(i).getElement0()) + "'.");
+                    }
+                    else{
+                        System.out.println("Assignment was ok.");
+                        sourceTypes.get(i).setElement1((Object)b.Value);
+                    }
+                :} 
+                | 
+                UpdateaAssignment 
+
+                ;
+
+
+
+AssignmentVal ::= StringConst:i {: RESULT = new TypeValuePair(i, Constants.TypeString); :}
+                | expr:i {: RESULT = new TypeValuePair("" + i, Constants.TypeInt); :}
+                ;
+
+
+
+
+
+ConditionalStatement ::= IfStatement {: System.out.println("ConditionalStatement statement"); :}
+                      | SwitchStatement {: System.out.println("New switch statement"); :}
+                      ;
+
+
+Loop ::=         WhileStatement
+                | ForStatement
+                | DoStatement
+                ;
+
+
+WhileStatement ::= WHILE OPAR Condition CPAR OBLOCK Statements CBLOCK {:
+                   System.out.println("This is While Statement"); 
+                :}
+                ;
+
+
+DoStatement    ::= DO OBLOCK Statements CBLOCK WHILE OPAR Condition CPAR SEMICOLON {:
+                   System.out.println("Do Statement"); 
+                :}
+                ;
+
+
+
+ForStatement ::= FOR OPAR Declaration SEMICOLON Condition SEMICOLON UpdateaAssignment CPAR OBLOCK Statements  CBLOCK {: System.out.println("for"); :};
+
+
+
+IfStatement     ::= IF OPAR Condition CPAR OBLOCK Statements CBLOCK{: System.out.println("If statement"); :} ElseStatement;
+
+ElseStatement ::= OneElseStatement
+                | ElseIfStatement
+                | empty
+                ;
+
+OneElseStatement ::= ELSE OBLOCK Statements CBLOCK {: System.out.println("also else statement"); :};
+
+
+ElseIfStatement  ::= ELSE IF OPAR Condition CPAR OBLOCK Statements CBLOCK {: System.out.println("also elsif statement/statements"); :} ElseStatement; //ElseStatement 
+
+///
+
+SwitchStatement  ::= SWITCH OPAR Identifier CPAR OBLOCK SwitchCases CBLOCK
+                  ;
+
+
+
+SwitchCases     ::= SwitchCase SwitchCases
+                  | empty
+                  ;
+
+
+SwitchCase      ::= CASE NumValue COLON Statements BREAK SEMICOLON {: System.out.println(" final switch statement"); :}
+                    ; 
+
+
+
+MethodDeclare  ::= Type Identifier:i OPAR MethodSignature:s CPAR OBLOCK Statements CBLOCK {:
+               if(s == null) sourceSignatures.put(i, null);
+               else sourceSignatures.put(i, s);
+               System.out.println(">> Method " + i.toString() + " Declared! with arg types: " + argTypeWriter(s));
+               System.out.println("Method Declared");
+                :}
+                ;
+
+MethodSignature ::= Signature:s {: RESULT = s; :} 
+                | empty {: RESULT = null; :}
+                ;
+
+Signature       ::= Signature:s COMMA Type:t Identifier {:
+                    s.add(t);
+                    RESULT = s;
+                :}
+                | Type:s Identifier {:
+                    ArrayList<Integer> list = new ArrayList<>();
+                    list.add(s);
+                    RESULT = list;
+                :}
+                ;
+
+MethodCall     ::= Identifier:i OPAR MethodArgs:a CPAR {:
+                        System.out.println(">> Method " + i.toString() + " called!");
+                        argCheck(sourceSignatures.get(i), a, i);
+                   :} 
+                | BaseName Identifier:i OPAR MethodArgs CPAR {: System.out.println(">> Method " + i.toString() + " called!"); :}
+                ;
+
+MethodArgs     ::= Args:i {: RESULT = i; :} 
+                | empty {: RESULT = new ArrayList<Integer>(); :}
+                ;
+
+Args           ::= Args:i COMMA Arg:t {:
+                    i.add(t.Type);
+                    RESULT = i;
+               :}
+                | Arg:t {:
+                    ArrayList<Integer> argL = new ArrayList<>();
+                    argL.add(t.Type);
+                    RESULT = argL;
+                :}
+                ;
+
+Arg            ::= NumValue:i {: RESULT = new TypeValuePair("" + i, Constants.TypeInt); :}
+                | StringConst:i {: RESULT = new TypeValuePair("" + i, Constants.TypeString); :}
+                | Identifier:i {: RESULT = new TypeValuePair(i, Constants.Identifier); :}
+                ;
+
+BaseName       ::= BaseName Identifier DOT 
+                | Identifier DOT
+                ;
+
+Condition      ::= Identifier COMPARATOR Identifier 
+                | TRUE 
+                | FALSE
+                | Identifier COMPARATOR NumValue
+                
+                ;
+
+
+PrintlnInput     ::= StringConst:i {: RESULT = new TypeValuePair("" + i, Constants.TypeString); System.out.println("Println Detected" + i ); :}
+                    |  expr:i {: RESULT = new TypeValuePair("" + i, Constants.TypeInt); System.out.println("Println Detected" + i ); :}
+                    ; 
+
+                      
+PrintlnStatement ::= PRINTLN OPAR PrintlnInput CPAR ;
+
+
+ClearStatement ::= CLEAR OPAR expr:t CPAR {:System.out.println("Clear " + t ); ClearScreen(t);  :}
+                   ;
+// ///////////////////* Calculator Grammar *///////////////////
+CalculationStatement ::= CalculationList{: System.out.println("CalculationStatementt"); :};
+
+CalculationList      ::= Calculation SEMICOLON
+                      | CalculationList Calculation SEMICOLON;
+
+Calculation          ::= expr;
+
+
+
+expr      ::=   expr:e1 PLUS  expr:e2         {: RESULT = e1+e2;       :}
+             | expr:e1 MINUS expr:e2        {: RESULT = e1-e2;       :}
+             | expr:e1 MULT expr:e2        {: RESULT = e1*e2;       :}
+             | expr:e1 DIVIDE expr:e2        {: RESULT = e1/e2;       :}
+             | expr:e1 POWER expr:e2        {: RESULT = Math.pow(e1,e2);     :}
+             |NumValue:i {: RESULT = i.doubleValue(); :}
+             | Identifier:i {: RESULT = Double.valueOf(((String)sourceTypes.get(i).getElement1())); :};
+
+ // add declared identifier
+empty          ::= ;
